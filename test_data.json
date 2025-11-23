@@ -1,0 +1,14 @@
+{
+  "voltage_rms": 242.5,
+  "current_rms": 12.3,
+  "power_active": 2984.5,
+  "power_reactive": 450.2,
+  "power_factor": 0.94,
+  "frequency": 60.1,
+  "thdv": 2.1,
+  "thdi": 3.2,
+  "temperature": 35.5,
+  "contact_resistance": 0.025,
+  "switching_cycles": 45620,
+  "harmonic_list": [1, 2, 3, 5, 7]
+}

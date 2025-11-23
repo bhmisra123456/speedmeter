@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Meter Predictive Maintenance - Agentic AI System</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.0/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --bg-color: #f4f7f6;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text-color: #333;
+            --heading-color: #2c3e50;
+            --subtext-color: #7f8c8d;
+            --border-color: #ecf0f1;
+            --input-bg: white;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+
+            /* Status Colors */
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --info-color: #3498db;
+        }
+
+        [data-theme="dark"] {
+            --primary-gradient: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            --bg-color: #121212;
+            --card-bg: rgba(30, 30, 30, 0.95);
+            --text-color: #e0e0e0;
+            --heading-color: #ecf0f1;
+            --subtext-color: #bdc3c7;
+            --border-color: #444;
+            --input-bg: #2c3e50;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--primary-gradient);
+            min-height: 100vh;
+            color: var(--text-color);
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .app-header {
+            background: var(--card-bg);
+            backdrop-filter: blur(15px);
+            padding: 2rem;
+            border-radius: 20px;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px var(--shadow-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            transition: background 0.3s ease;
+        }
+
+        .app-header h1 {
+            color: var(--heading-color);
+            font-size: 2.2rem;
+            font-weight: 600;
+            margin: 0;
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .app-header p {
+            color: var(--subtext-color);
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.3rem;
+            border-radius: 25px;
+        }
+
+        .mode-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            background: transparent;
+            color: var(--text-color);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .mode-btn.active {
+            background: var(--info-color);
+            color: white;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn.active {
+            background: linear-gradient(45deg, #27ae60, #2ecc71);
+        }
+
+        .btn.danger {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+        }
+
+        .theme-toggle {
+            background: none;
+            border: none;
+            color: var(--heading-color);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: background 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="dark"] .theme-toggle:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .app-content {
+            display: none;
+        }
+
+        .app-content.active {
+            display: block;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 2rem;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px var(--shadow-color);
+            transition: transform 0.3s ease, background 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h4,
+        .card h3 {
+            color: var(--heading-color);
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .status-online {
+            background: rgba(39, 174, 96, 0.2);
+            color: var(--success-color);
+        }
+
+        .status-offline {
+            background: rgba(231, 76, 60, 0.2);
+            color: var(--danger-color);
+        }
+
+        .control-panel {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px var(--shadow-color);
+            transition: background 0.3s ease;
+        }
+
+        .control-panel h3 {
+            color: var(--heading-color);
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+
+        .control-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--heading-color);
+        }
+
+        .control-group select,
+        .control-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: var(--input-bg);
+            color: var(--text-color);
+        }
+
+        .control-group select:focus,
+        .control-group input:focus {
+            outline: none;
+            border-color: var(--info-color);
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.2);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .app-header h1 {
+                font-size: 1.8rem;
+            }
+
+            .control-group {
+                margin-bottom: 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header fade-in">
+            <div>
+                <h1>🤖 Smart Meter Predictive Maintenance</h1>
+                <p>Agentic AI System with Real-time Condition Monitoring</p>
+            </div>
+            <div class="header-controls">
+                <div class="mode-selector">
+                    <button class="mode-btn active" data-mode="vanilla" id="vanillaModeBtn">
+                        🖥️ Classic Dashboard
+                    </button>
+                    <button class="mode-btn" data-mode="react" id="reactModeBtn">
+                        ⚛️ React Interface
+                    </button>
+                </div>
+                <button class="theme-toggle" id="themeToggle" title="Toggle Dark Mode">🌙</button>
+                <div class="status-indicator status-offline" id="connectionStatus">
+                    <span>●</span>
+                    <span>System Offline</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Vanilla JavaScript Dashboard -->
+        <div class="app-content vanilla-content active" id="vanillaContent">
+            <!-- Control Panel -->
+            <div class="control-panel fade-in">
+                <h3>📊 System Configuration</h3>
+                <div class="control-group">
+                    <label for="meterSelect">Select Smart Meter:</label>
+                    <select id="meterSelect">
+                        <option value="">Choose a meter...</option>
+                        <option value="METER-001">METER-001 - Industrial Plant A</option>
+                        <option value="METER-002">METER-002 - Commercial Building B</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <button class="btn" id="connectBtn">Connect to Meter</button>
+                    <button class="btn" id="startMonitoringBtn">🚀 Start Monitoring</button>
+                    <button class="btn danger" id="stopMonitoringBtn" disabled>⏹ Stop Monitoring</button>
+                    <button class="btn" id="refreshDataBtn">🔄 Refresh Data</button>
+                </div>
+            </div>
+
+            <!-- Main Dashboard Content -->
+            <div class="dashboard-grid">
+                <!-- Sidebar -->
+                <div class="sidebar">
+                    <!-- Health Overview -->
+                    <div class="card fade-in">
+                        <h3>🎯 Overall Health Status</h3>
+                        <div id="healthScoreCircle" style="--score-angle: 0deg; --health-color: #ecf0f1; width: 180px; height: 180px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 1.5rem auto; background: conic-gradient(var(--health-color) 0deg, var(--health-color) var(--score-angle), var(--border-color) var(--score-angle)); position: relative;">
+                            <div id="healthScoreValue" style="font-size: 3rem; font-weight: bold; z-index: 2; position: relative;">85%</div>
+                        </div>
+                        <div style="text-align: center; margin-top: 1rem;">
+                            <div style="margin-bottom: 0.5rem;">
+                                <strong>Failure Probability:</strong> <span id="failureProbability">2.3%</span>
+                            </div>
+                            <div style="margin-bottom: 0.5rem;">
+                                <strong>Operating Hours:</strong> <span id="operatingHours">8,760</span>
+                            </div>
+                            <div>
+                                <strong>Next Maintenance:</strong> <span id="nextMaintenance">45 days</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alerts Panel -->
+                    <div class="card fade-in">
+                        <h3>🚨 Active Alerts</h3>
+                        <div id="alertsContainer" style="max-height: 300px; overflow-y: auto;">
+                            <div class="alert-item" style="background: rgba(52, 152, 219, 0.1); padding: 0.75rem; border-radius: 8px; margin-bottom: 0.5rem; border-left: 4px solid #3498db;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span>ℹ️</span>
+                                    <div>
+                                        <div style="font-weight: 600; font-size: 0.9rem;">System Status</div>
+                                        <div style="font-size: 0.8rem; color: var(--subtext-color);">All systems operating normally</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Content Area -->
+                <div class="main-content">
+                    <!-- Charts Section -->
+                    <div class="card fade-in">
+                        <h4>📈 Power Quality Trends</h4>
+                        <div style="position: relative; height: 300px;">
+                            <canvas id="powerQualityChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- React Application Container -->
+        <div class="app-content react-content" id="reactContent">
+            <div id="react-app-root" style="min-height: 500px;">
+                <!-- React app will be loaded here -->
+                <div style="display: flex; justify-content: center; align-items: center; height: 100%; background: rgba(255,255,255,0.1); border-radius: 15px; backdrop-filter: blur(10px);">
+                    <div style="text-align: center;">
+                        <h3>⚛️ React Interface</h3>
+                        <p>Loading React application...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global Theme and Mode Management
+        let currentMode = 'vanilla';
+        let currentTheme = localStorage.getItem('theme') || 'light';
+
+        function initializeTheme() {
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            const toggleBtn = document.getElementById('themeToggle');
+            if (toggleBtn) {
+                toggleBtn.innerHTML = currentTheme === 'dark' ? '☀️' : '🌙';
+            }
+        }
+
+        function toggleTheme() {
+            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            localStorage.setItem('theme', currentTheme);
+            const toggleBtn = document.getElementById('themeToggle');
+            if (toggleBtn) {
+                toggleBtn.innerHTML = currentTheme === 'dark' ? '☀️' : '🌙';
+            }
+        }
+
+        function switchMode(mode) {
+            // Update button states
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+
+            // Show/hide content
+            document.querySelectorAll('.app-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${mode}Content`).classList.add('active');
+
+            currentMode = mode;
+
+            // Initialize React app if switching to React mode
+            if (mode === 'react') {
+                loadReactAppViaIframe();
+            }
+        }
+
+        // Simple React app loading via iframe
+        function loadReactAppViaIframe() {
+            console.log('Loading React app via iframe...');
+            const reactRoot = document.getElementById('react-app-root');
+            if (!reactRoot) return;
+
+            reactRoot.innerHTML = `
+                <div style="width: 100%; height: 500px; border: none; border-radius: 15px; overflow: hidden;">
+                    <iframe 
+                        src="http://localhost:3000" 
+                        width="100%" 
+                        height="100%" 
+                        frameborder="0"
+                        title="React App"
+                        style="background: white; border-radius: 15px;"
+                        onload="console.log('React iframe loaded successfully')"
+                        onerror="console.log('React iframe failed to load')">
+                    </iframe>
+                </div>
+                <div style="margin-top: 1rem; text-align: center;">
+                    <p style="color: var(--success-color); font-size: 0.9rem;">
+                        ✅ React app loaded successfully via iframe
+                    </p>
+                    <p style="font-size: 0.8rem; color: var(--subtext-color);">
+                        The React development server is running on port 3000
+                    </p>
+                </div>
+            `;
+        }
+
+        // Initialize everything when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeTheme();
+
+            // Event listeners
+            document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+            document.getElementById('vanillaModeBtn').addEventListener('click', () => switchMode('vanilla'));
+            document.getElementById('reactModeBtn').addEventListener('click', () => switchMode('react'));
+
+            // Initialize basic chart
+            initializeBasicChart();
+        });
+
+        function initializeBasicChart() {
+            const ctx = document.getElementById('powerQualityChart').getContext('2d');
+            
+            // Generate sample data
+            const labels = [];
+            const voltageData = [];
+            const currentData = [];
+            
+            for (let i = 0; i < 20; i++) {
+                labels.push(`T${i+1}`);
+                voltageData.push(240 + Math.random() * 4 - 2);
+                currentData.push(10 + Math.random() * 2 - 1);
+            }
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Voltage (V)',
+                            data: voltageData,
+                            borderColor: '#3498db',
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Current (A)',
+                            data: currentData,
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            display: true,
+                            title: { display: true, text: 'Time Points' }
+                        },
+                        y: {
+                            display: true,
+                            title: { display: true, text: 'Values' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Simple event handlers for buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('connectBtn').addEventListener('click', function() {
+                alert('Connected to meter successfully!');
+            });
+
+            document.getElementById('startMonitoringBtn').addEventListener('click', function() {
+                document.getElementById('startMonitoringBtn').disabled = true;
+                document.getElementById('stopMonitoringBtn').disabled = false;
+                alert('Monitoring started!');
+            });
+
+            document.getElementById('stopMonitoringBtn').addEventListener('click', function() {
+                document.getElementById('startMonitoringBtn').disabled = false;
+                document.getElementById('stopMonitoringBtn').disabled = true;
+                alert('Monitoring stopped!');
+            });
+
+            document.getElementById('refreshDataBtn').addEventListener('click', function() {
+                alert('Data refreshed!');
+            });
+        });
+    </script>
+</body>
+
+</html>

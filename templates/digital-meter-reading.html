@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Meter Reading - Smart Meter System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.0/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-color: #0a0e27;
+            --card-bg: rgba(20, 25, 45, 0.95);
+            --text-color: #e0e0e0;
+            --heading-color: #ecf0f1;
+            --subtext-color: #bdc3c7;
+            --border-color: #2c3e50;
+            --shadow-color: rgba(0, 0, 0, 0.5);
+            
+            /* Digital Display Colors */
+            --voltage-color: #00aaff;
+            --current-color: #ff6600;
+            --power-color: #00ff00;
+            --frequency-color: #ff00ff;
+            --pf-color: #ffff00;
+            --reactive-color: #ffaa00;
+            --temp-color: #ff4444;
+            --thd-color: #44aaff;
+            
+            /* Status Colors */
+            --status-good: #00ff00;
+            --status-warning: #ff8800;
+            --status-critical: #ff0000;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .meter-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            width: 100%;
+        }
+
+        /* Header Styles */
+        .meter-header {
+            background: var(--card-bg);
+            padding: 1.5rem 2rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px var(--shadow-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .meter-header h1 {
+            color: var(--heading-color);
+            font-size: 1.8rem;
+            background: linear-gradient(45deg, #00aaff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            box-shadow: 0 0 8px currentColor;
+        }
+
+        .status-dot.online {
+            background: var(--status-good);
+            color: var(--status-good);
+        }
+
+        .status-dot.offline {
+            background: var(--status-critical);
+            color: var(--status-critical);
+        }
+
+        /* Meter Selector */
+        .meter-selector {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px var(--shadow-color);
+        }
+
+        .meter-selector label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--heading-color);
+        }
+
+        .meter-selector select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            color: var(--text-color);
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .meter-selector select:focus {
+            outline: none;
+            border-color: var(--voltage-color);
+        }
+
+        /* Digital Display Container */
+        .digital-display-container {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px var(--shadow-color);
+        }
+
+        /* Meter Info Chips */
+        .meter-info {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .meter-chip {
+            padding: 0.5rem 1rem;
+            background: rgba(52, 152, 219, 0.2);
+            border: 1px solid #3498db;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: #3498db;
+        }
+
+        .meter-chip.active {
+            background: rgba(39, 174, 96, 0.2);
+            border-color: #27ae60;
+            color: #27ae60;
+        }
+
+        /* Digital Display Grid */
+        .digital-display-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2rem;
+        }
+
+        .digital-display {
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid;
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .digital-display:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        .digital-display::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.5) 100%);
+            pointer-events: none;
+        }
+
+        .digital-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 0 15px currentColor;
+            position: relative;
+            z-index: 1;
+        }
+
+        .digital-unit {
+            font-size: 1rem;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 0 8px currentColor;
+            margin-top: 0.25rem;
+        }
+
+        .digital-label {
+            font-size: 0.75rem;
+            color: #999;
+            margin-top: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Color Classes for Displays */
+        .display-voltage { color: var(--voltage-color); border-color: var(--voltage-color); }
+        .display-current { color: var(--current-color); border-color: var(--current-color); }
+        .display-power { color: var(--power-color); border-color: var(--power-color); }
+        .display-frequency { color: var(--frequency-color); border-color: var(--frequency-color); }
+        .display-pf { color: var(--pf-color); border-color: var(--pf-color); }
+        .display-reactive { color: var(--reactive-color); border-color: var(--reactive-color); }
+        .display-temp { color: var(--temp-color); border-color: var(--temp-color); }
+        .display-thd { color: var(--thd-color); border-color: var(--thd-color); }
+
+        /* Status Indicators Grid */
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.25rem;
+            margin-top: 2rem;
+        }
+
+        .status-card {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .status-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .status-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .status-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .led-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+        }
+
+        .led-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            box-shadow: 0 0 10px currentColor;
+        }
+
+        .led-text {
+            font-size: 0.85rem;
+            color: #ccc;
+        }
+
+        /* Timestamp */
+        .timestamp {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        /* Loading State */
+        .loading-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--subtext-color);
+        }
+
+        .loading-icon {
+            font-size: 4rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.1); }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Error State */
+        .error-state {
+            background: rgba(231, 76, 60, 0.2);
+            border: 1px solid #e74c3c;
+            color: #e74c3c;
+            padding: 1.5rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        /* Alert Panel Styles */
+        .alerts-panel {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: 0 10px 30px var(--shadow-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .alerts-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .alerts-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--heading-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .alert-count {
+            background: rgba(231, 76, 60, 0.2);
+            color: var(--status-critical);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .alert-count.zero {
+            background: rgba(39, 174, 96, 0.2);
+            color: var(--status-good);
+        }
+
+        .alerts-content {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .alert-item {
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 4px solid;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .alert-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .alert-item.critical {
+            border-left-color: var(--status-critical);
+            background: rgba(231, 76, 60, 0.1);
+        }
+
+        .alert-item.warning {
+            border-left-color: var(--status-warning);
+            background: rgba(255, 136, 0, 0.1);
+        }
+
+        .alert-item.info {
+            border-left-color: var(--voltage-color);
+            background: rgba(0, 170, 255, 0.1);
+        }
+
+        .alert-header {
+            display: flex;
+            justify-content: between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+        }
+
+        .alert-type {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--heading-color);
+            flex: 1;
+        }
+
+        .alert-severity {
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .alert-severity.critical {
+            background: var(--status-critical);
+            color: white;
+        }
+
+        .alert-severity.warning {
+            background: var(--status-warning);
+            color: white;
+        }
+
+        .alert-severity.info {
+            background: var(--voltage-color);
+            color: white;
+        }
+
+        .alert-message {
+            color: var(--text-color);
+            font-size: 0.9rem;
+            line-height: 1.4;
+            margin-bottom: 0.5rem;
+        }
+
+        .alert-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: var(--subtext-color);
+        }
+
+        .alert-time {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .alert-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .alert-action-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--subtext-color);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .alert-action-btn:hover {
+            border-color: var(--voltage-color);
+            color: var(--voltage-color);
+        }
+
+        .no-alerts {
+            text-align: center;
+            padding: 2rem;
+            color: var(--subtext-color);
+        }
+
+        .no-alerts-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* Scrollbar styling for alerts */
+        .alerts-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .alerts-content::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 3px;
+        }
+
+        .alerts-content::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        .alerts-content::-webkit-scrollbar-thumb:hover {
+            background: var(--voltage-color);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .meter-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .meter-header h1 {
+                font-size: 1.5rem;
+            }
+
+            .digital-display-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .digital-value {
+                font-size: 1.8rem;
+            }
+
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .digital-display-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="meter-container">
+        <!-- Header -->
+        <header class="meter-header">
+            <h1>⚡ Digital Meter Reading</h1>
+            <div class="connection-status" id="connectionStatus">
+                <span class="status-dot offline" id="statusDot"></span>
+                <span id="statusText">Disconnected</span>
+            </div>
+        </header>
+
+        <!-- Meter Selector -->
+        <div class="meter-selector">
+            <label for="meterSelect">Select Smart Meter:</label>
+            <select id="meterSelect">
+                <option value="">Loading meters...</option>
+            </select>
+        </div>
+
+        <!-- Digital Display Container -->
+        <div class="digital-display-container" id="displayContainer">
+            <div class="loading-state" id="loadingState">
+                <div class="loading-icon">⚡</div>
+                <p>Select a meter to view digital readings</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Digital Meter Reading Application
+        class DigitalMeterReading {
+            constructor() {
+                this.socket = null;
+                this.selectedMeter = null;
+                this.currentReading = null;
+                this.isConnected = false;
+                
+                this.init();
+            }
+
+            init() {
+                this.initWebSocket();
+                this.loadMeters();
+                this.setupEventListeners();
+            }
+
+            // Initialize WebSocket connection
+            initWebSocket() {
+                this.socket = io(window.location.origin, {
+                    transports: ['websocket', 'polling']
+                });
+
+                this.socket.on('connect', () => {
+                    console.log('WebSocket connected');
+                    this.isConnected = true;
+                    this.updateConnectionStatus(true);
+                });
+
+                this.socket.on('disconnect', () => {
+                    console.log('WebSocket disconnected');
+                    this.isConnected = false;
+                    this.updateConnectionStatus(false);
+                });
+
+                this.socket.on('meter_update', (data) => {
+                    if (this.selectedMeter && data.meter_id === this.selectedMeter.id) {
+                        this.currentReading = data.reading || data.latest_reading;
+                        this.updateDisplay();
+                    }
+                });
+
+                this.socket.on('meter_reading', (data) => {
+                    if (this.selectedMeter && data.meter_id === this.selectedMeter.id) {
+                        this.currentReading = data.reading;
+                        this.updateDisplay();
+                    }
+                });
+
+                // Listen for new alerts
+                this.socket.on('alert_created', (data) => {
+                    if (this.selectedMeter && data.meter_id === this.selectedMeter.id) {
+                        this.fetchAlerts(this.selectedMeter.id);
+                        // Show notification or update count
+                        this.showAlertNotification(data);
+                    }
+                });
+
+                this.socket.on('alert_acknowledged', (data) => {
+                    if (this.selectedMeter && data.meter_id === this.selectedMeter.id) {
+                        this.fetchAlerts(this.selectedMeter.id);
+                    }
+                });
+            }
+
+            // Update connection status indicator
+            updateConnectionStatus(isConnected) {
+                const dot = document.getElementById('statusDot');
+                const text = document.getElementById('statusText');
+
+                if (isConnected) {
+                    dot.classList.remove('offline');
+                    dot.classList.add('online');
+                    text.textContent = 'Connected';
+                } else {
+                    dot.classList.remove('online');
+                    dot.classList.add('offline');
+                    text.textContent = 'Disconnected';
+                }
+            }
+
+            // Load available meters
+            async loadMeters() {
+                try {
+                    const response = await axios.get('/api/meters');
+                    const meters = response.data.data || response.data;
+                    
+                    const select = document.getElementById('meterSelect');
+                    select.innerHTML = '<option value="">Select a meter...</option>';
+                    
+                    meters.forEach(meter => {
+                        const option = document.createElement('option');
+                        option.value = meter.id;
+                        option.textContent = `${meter.name} (${meter.id}) - ${meter.location || 'Unknown Location'}`;
+                        option.dataset.meter = JSON.stringify(meter);
+                        select.appendChild(option);
+                    });
+                } catch (error) {
+                    console.error('Failed to load meters:', error);
+                    document.getElementById('meterSelect').innerHTML = 
+                        '<option value="">Error loading meters</option>';
+                }
+            }
+
+            // Setup event listeners
+            setupEventListeners() {
+                document.getElementById('meterSelect').addEventListener('change', (e) => {
+                    const selectedOption = e.target.selectedOptions[0];
+                    if (selectedOption && selectedOption.dataset.meter) {
+                        this.selectMeter(JSON.parse(selectedOption.dataset.meter));
+                    } else {
+                        this.clearDisplay();
+                    }
+                });
+
+                // Alert refresh button
+                document.getElementById('refreshAlertsBtn').addEventListener('click', () => {
+                    if (this.selectedMeter) {
+                        this.fetchAlerts(this.selectedMeter.id);
+                    }
+                });
+            }
+
+            // Select a meter
+            selectMeter(meter) {
+                // Unsubscribe from previous meter
+                if (this.selectedMeter && this.socket) {
+                    this.socket.emit('unsubscribe_meter', { meter_id: this.selectedMeter.id });
+                }
+
+                this.selectedMeter = meter;
+                
+                // Subscribe to new meter
+                if (this.socket && meter) {
+                    this.socket.emit('subscribe_meter', { meter_id: meter.id });
+                }
+
+                // Fetch initial data
+                this.fetchMeterData(meter.id);
+                
+                // Fetch alerts for this meter
+                this.fetchAlerts(meter.id);
+            }
+
+            // Fetch meter data from API
+            async fetchMeterData(meterId) {
+                try {
+                    this.showLoading();
+                    
+                    const response = await axios.get(`/api/meter/${meterId}/health`);
+                    const data = response.data.data;
+                    
+                    if (data && data.latest_reading) {
+                        this.currentReading = data.latest_reading;
+                        this.updateDisplay();
+                    } else {
+                        this.showError('No reading data available for this meter');
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch meter data:', error);
+                    this.showError('Failed to load meter data: ' + error.message);
+                }
+            }
+
+            // Show loading state
+            showLoading() {
+                document.getElementById('displayContainer').innerHTML = `
+                    <div class="loading-state">
+                        <div class="loading-icon">⚡</div>
+                        <p>Loading meter data...</p>
+                    </div>
+                `;
+            }
+
+            // Show error state
+            showError(message) {
+                document.getElementById('displayContainer').innerHTML = `
+                    <div class="error-state">
+                        <strong>Error:</strong> ${message}
+                    </div>
+                `;
+            }
+
+            // Clear display
+            clearDisplay() {
+                this.selectedMeter = null;
+                this.currentReading = null;
+                document.getElementById('displayContainer').innerHTML = `
+                    <div class="loading-state">
+                        <div class="loading-icon">⚡</div>
+                        <p>Select a meter to view digital readings</p>
+                    </div>
+                `;
+            }
+
+            // Update the digital display
+            updateDisplay() {
+                if (!this.selectedMeter || !this.currentReading) {
+                    return;
+                }
+
+                const meter = this.selectedMeter;
+                const reading = this.currentReading;
+
+                document.getElementById('displayContainer').innerHTML = `
+                    <!-- Meter Info -->
+                    <div class="meter-info">
+                        <div class="meter-chip active">${meter.name} (${meter.id})</div>
+                        <div class="meter-chip">${meter.meter_type || 'Standard'}</div>
+                        <div class="meter-chip">${meter.location || 'Unknown'}</div>
+                        <div class="meter-chip active">${meter.status || 'Active'}</div>
+                    </div>
+
+                    <!-- Primary Measurements -->
+                    <div class="digital-display-grid">
+                        ${this.createDisplay(reading.voltage_rms, 'V', 'Voltage RMS', 'display-voltage')}
+                        ${this.createDisplay(reading.current_rms, 'A', 'Current RMS', 'display-current')}
+                        ${this.createDisplay(reading.power_active, 'kW', 'Active Power', 'display-power')}
+                        ${this.createDisplay(reading.frequency, 'Hz', 'Frequency', 'display-frequency')}
+                    </div>
+
+                    <!-- Secondary Measurements -->
+                    <div class="digital-display-grid">
+                        ${this.createDisplay(reading.power_factor, '', 'Power Factor', 'display-pf', 3)}
+                        ${this.createDisplay(reading.power_reactive, 'kVAR', 'Reactive Power', 'display-reactive')}
+                        ${this.createDisplay(reading.temperature, '°C', 'Temperature', 'display-temp')}
+                        ${this.createDisplay(reading.thdv, '%', 'THD Voltage', 'display-thd', 2)}
+                    </div>
+
+                    <!-- Status Indicators -->
+                    <div class="status-grid">
+                        ${this.createStatusCard('⚡', 'Power Quality', 
+                            this.getHealthStatus(reading.thdv || 0, { good: 5, warning: 8 }),
+                            `THD: ${this.formatValue(reading.thdv, 2)}%`, 'var(--pf-color)')}
+                        ${this.createStatusCard('🔌', 'Load Status',
+                            this.getHealthStatus(reading.power_active || 0, { good: 50, warning: 80 }),
+                            `Load: ${this.formatValue((reading.power_active || 0) / 100 * 100, 0)}%`, 'var(--power-color)')}
+                        ${this.createStatusCard('🌡️', 'Thermal',
+                            this.getHealthStatus(reading.temperature || 0, { good: 40, warning: 60 }),
+                            `Temp: ${this.formatValue(reading.temperature, 1)}°C`, 'var(--temp-color)')}
+                        ${this.createStatusCard('📊', 'Frequency',
+                            Math.abs((reading.frequency || 50) - 50) < 0.5 ? 'good' : 
+                            Math.abs((reading.frequency || 50) - 50) < 1 ? 'warning' : 'critical',
+                            `Freq: ${this.formatValue(reading.frequency, 1)} Hz`, 'var(--frequency-color)')}
+                    </div>
+
+                    <!-- Alerts Panel -->
+                    <div class="alerts-panel" id="alertsPanel">
+                        <div class="alerts-header">
+                            <h3 class="alerts-title">
+                                🚨 Active Alerts
+                                <span class="alert-count zero" id="alertCount">0</span>
+                            </h3>
+                            <button class="alert-action-btn" id="refreshAlertsBtn" title="Refresh Alerts">
+                                🔄 Refresh
+                            </button>
+                        </div>
+                        <div class="alerts-content" id="alertsContent">
+                            <div class="no-alerts">
+                                <div class="no-alerts-icon">✅</div>
+                                <p>No active alerts for this meter</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Timestamp -->
+                    <div class="timestamp">
+                        Last Updated: ${reading.timestamp ? new Date(reading.timestamp).toLocaleString() : 'N/A'}
+                    </div>
+                `;
+            }
+
+            // Create a digital display element
+            createDisplay(value, unit, label, colorClass, decimals = 1) {
+                const formattedValue = this.formatValue(value, decimals);
+                return `
+                    <div class="digital-display ${colorClass}">
+                        <div class="digital-value">${formattedValue}</div>
+                        <div class="digital-unit">${unit}</div>
+                        <div class="digital-label">${label}</div>
+                    </div>
+                `;
+            }
+
+            // Create a status card element
+            createStatusCard(icon, title, status, label, color) {
+                const statusColor = status === 'good' ? 'var(--status-good)' : 
+                                  status === 'warning' ? 'var(--status-warning)' : 'var(--status-critical)';
+                
+                return `
+                    <div class="status-card">
+                        <div class="status-icon" style="color: ${color};">${icon}</div>
+                        <div class="status-title" style="color: ${color};">${title}</div>
+                        <div class="led-indicator">
+                            <div class="led-dot" style="background-color: ${statusColor}; color: ${statusColor};"></div>
+                            <span class="led-text">${label}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Format value with decimals
+            formatValue(value, decimals = 1) {
+                if (value === null || value === undefined) {
+                    return '--';
+                }
+                return Number(value).toFixed(decimals);
+            }
+
+            // Get health status based on thresholds
+            getHealthStatus(value, thresholds) {
+                if (value < thresholds.good) return 'good';
+                if (value < thresholds.warning) return 'warning';
+                return 'critical';
+            }
+
+            // Fetch alerts for the selected meter
+            async fetchAlerts(meterId) {
+                try {
+                    const response = await axios.get(`/api/alerts?meter_id=${meterId}&acknowledged=false&limit=50`);
+                    const alerts = response.data.data || response.data;
+                    this.renderAlerts(alerts);
+                } catch (error) {
+                    console.error('Failed to fetch alerts:', error);
+                    this.renderAlerts([]);
+                }
+            }
+
+            // Render alerts in the panel
+            renderAlerts(alerts) {
+                const alertsContent = document.getElementById('alertsContent');
+                const alertCount = document.getElementById('alertCount');
+                
+                // Update alert count
+                alertCount.textContent = alerts.length;
+                alertCount.className = `alert-count ${alerts.length === 0 ? 'zero' : ''}`;
+                
+                if (alerts.length === 0) {
+                    alertsContent.innerHTML = `
+                        <div class="no-alerts">
+                            <div class="no-alerts-icon">✅</div>
+                            <p>No active alerts for this meter</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                alertsContent.innerHTML = alerts.map(alert => this.createAlertItem(alert)).join('');
+            }
+
+            // Create an alert item HTML
+            createAlertItem(alert) {
+                const timeAgo = this.getTimeAgo(alert.timestamp);
+                const severity = alert.severity || 'info';
+                
+                return `
+                    <div class="alert-item ${severity}">
+                        <div class="alert-header">
+                            <div class="alert-type">${this.getAlertTypeLabel(alert.alert_type)}</div>
+                            <div class="alert-severity ${severity}">${severity}</div>
+                        </div>
+                        <div class="alert-message">${alert.message || 'No message provided'}</div>
+                        <div class="alert-meta">
+                            <div class="alert-time">
+                                🕐 ${timeAgo}
+                            </div>
+                            <div class="alert-actions">
+                                ${!alert.acknowledged ? `<button class="alert-action-btn" onclick="digitalMeterApp.acknowledgeAlert(${alert.id})">✓ Acknowledge</button>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Get human-readable alert type label
+            getAlertTypeLabel(alertType) {
+                const labels = {
+                    'temperature': '🌡️ Temperature Alert',
+                    'power_quality': '⚡ Power Quality',
+                    'relay_health': '🔌 Relay Health',
+                    'power_factor': '📊 Power Factor',
+                    'health': '💚 System Health',
+                    'surge': '⚡ Voltage Surge',
+                    'frequency': '🔄 Frequency Deviation'
+                };
+                return labels[alertType] || `📢 ${alertType || 'General Alert'}`;
+            }
+
+            // Calculate time ago string
+            getTimeAgo(timestamp) {
+                if (!timestamp) return 'Unknown time';
+                
+                const now = new Date();
+                const alertTime = new Date(timestamp);
+                const diffMs = now - alertTime;
+                const diffMins = Math.floor(diffMs / (1000 * 60));
+                const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                
+                if (diffMins < 1) return 'Just now';
+                if (diffMins < 60) return `${diffMins}m ago`;
+                if (diffHours < 24) return `${diffHours}h ago`;
+                return `${diffDays}d ago`;
+            }
+
+            // Acknowledge an alert
+            async acknowledgeAlert(alertId) {
+                try {
+                    await axios.post(`/api/alerts/${alertId}/acknowledge`);
+                    // Refresh alerts after acknowledgment
+                    if (this.selectedMeter) {
+                        this.fetchAlerts(this.selectedMeter.id);
+                    }
+                } catch (error) {
+                    console.error('Failed to acknowledge alert:', error);
+                    alert('Failed to acknowledge alert. Please try again.');
+                }
+            }
+
+            // Show alert notification for new alerts
+            showAlertNotification(alertData) {
+                // Simple notification - could be enhanced with a toast library
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: var(--status-critical);
+                    color: white;
+                    padding: 1rem 1.5rem;
+                    border-radius: 8px;
+                    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+                    z-index: 1000;
+                    animation: slideIn 0.3s ease-out;
+                `;
+                
+                notification.innerHTML = `
+                    <strong>New Alert!</strong><br>
+                    ${alertData.message || 'A new alert has been generated'}
+                `;
+                
+                document.body.appendChild(notification);
+                
+                // Remove notification after 5 seconds
+                setTimeout(() => {
+                    notification.remove();
+                }, 5000);
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            window.digitalMeterApp = new DigitalMeterReading();
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,1618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI-Powered Digital Smart Meter Interface with real-time data visualization, predictive analytics, and intelligent insights">
+    <meta name="keywords" content="smart meter, AI, predictive maintenance, energy monitoring, real-time data, digital dashboard">
+    <meta name="author" content="Smart Meter Revolution">
+    <meta name="theme-color" content="#00d4ff">
+    <title>AI-Powered Digital Smart Meter Interface</title>
+    
+    <!-- React and Dependencies -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            --accent-color: #00d4ff;
+            --success-color: #00ff88;
+            --warning-color: #ffaa00;
+            --danger-color: #ff4757;
+            --bg-color: #0a0a0a;
+            --card-bg: rgba(26, 26, 46, 0.9);
+            --text-color: #ffffff;
+            --subtext-color: #b0b0b0;
+            --border-color: rgba(0, 212, 255, 0.3);
+            --shadow-color: rgba(0, 0, 0, 0.5);
+        }
+
+        [data-theme="light"] {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --bg-color: #f8f9fa;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text-color: #2c3e50;
+            --subtext-color: #7f8c8d;
+            --border-color: rgba(102, 126, 234, 0.3);
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: var(--primary-gradient);
+            min-height: 100vh;
+            color: var(--text-color);
+            transition: all 0.3s ease;
+            overflow-x: hidden;
+        }
+
+        .smart-meter-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: transparent;
+        }
+
+        .header-section {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            padding: 2rem;
+            border-radius: 20px;
+            margin-bottom: 2rem;
+            box-shadow: 0 20px 40px var(--shadow-color);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .glow-effect {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            text-shadow: 0 0 20px var(--accent-color);
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, var(--accent-color), var(--success-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .ai-status {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-left: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .ai-status.active {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--success-color);
+            border: 1px solid var(--success-color);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+
+        .ai-status:not(.active) {
+            background: rgba(255, 71, 87, 0.2);
+            color: var(--danger-color);
+            border: 1px solid var(--danger-color);
+        }
+
+        .digital-font {
+            font-family: 'Courier New', monospace;
+            color: var(--accent-color);
+            font-size: 0.9rem;
+        }
+
+        .main-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .display-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px var(--shadow-color);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .display-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-color), var(--success-color));
+        }
+
+        .display-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 60px var(--shadow-color);
+        }
+
+        .display-title {
+            font-size: 1.2rem;
+            color: var(--accent-color);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .main-reading {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--text-color);
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            margin-bottom: 0.5rem;
+            font-family: 'Courier New', monospace;
+        }
+
+        .sub-reading {
+            font-size: 0.9rem;
+            color: var(--subtext-color);
+            margin-bottom: 0.3rem;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .status-item {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(0, 212, 255, 0.1);
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+        }
+
+        .status-label {
+            font-size: 0.8rem;
+            color: var(--subtext-color);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+
+        .status-value {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            font-family: 'Courier New', monospace;
+        }
+
+        .chart-container {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px var(--shadow-color);
+            border: 1px solid var(--border-color);
+            margin-bottom: 2rem;
+            height: 400px;
+            position: relative;
+        }
+
+        .chart-container canvas {
+            border-radius: 10px;
+        }
+
+        .ai-insights {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px var(--shadow-color);
+            border: 1px solid var(--border-color);
+            margin-bottom: 2rem;
+        }
+
+        .ai-insights h3 {
+            color: var(--success-color);
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .insight-item {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--success-color);
+            border-radius: 15px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .insight-item:hover {
+            background: rgba(0, 255, 136, 0.2);
+            transform: translateX(5px);
+        }
+
+        .control-panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px var(--shadow-color);
+            border: 1px solid var(--border-color);
+            margin-bottom: 2rem;
+        }
+
+        .control-button {
+            background: linear-gradient(45deg, var(--accent-color), #0099cc);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin: 0.5rem;
+            transition: all 0.3s ease;
+            font-family: 'Courier New', monospace;
+        }
+
+        .control-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .control-button.active {
+            background: linear-gradient(45deg, var(--success-color), #00cc66);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+
+        .navigation-panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 20px 40px var(--shadow-color);
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .nav-button {
+            background: transparent;
+            color: var(--subtext-color);
+            border: 2px solid var(--border-color);
+            padding: 0.5rem 1rem;
+            margin: 0 0.5rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-button:hover,
+        .nav-button.active {
+            color: var(--accent-color);
+            border-color: var(--accent-color);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .smart-meter-container {
+                padding: 10px;
+            }
+
+            .glow-effect {
+                font-size: 2rem;
+            }
+
+            .main-display {
+                grid-template-columns: 1fr;
+            }
+
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .main-reading {
+                font-size: 2rem;
+            }
+
+            .control-button {
+                display: block;
+                width: 100%;
+                margin: 0.5rem 0;
+            }
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px var(--accent-color);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" id="themeToggle" title="Toggle Theme">
+        🌓
+    </button>
+
+    <div class="smart-meter-container">
+        <div id="root"></div>
+    </div>
+
+    <script type="text/babel">
+        {% raw %}
+        const { useState, useEffect, useRef } = React;
+
+        const DigitalSmartMeter = () => {
+            const [currentReading, setCurrentReading] = useState(2347.89);
+            const [mode, setMode] = useState('real-time');
+            const [aiActive, setAiActive] = useState(true);
+            const [voltage, setVoltage] = useState(120.5);
+            const [current, setCurrent] = useState(8.2);
+            const [power, setPower] = useState(987);
+            const [frequency, setFrequency] = useState(60.0);
+            const [timestamp, setTimestamp] = useState(new Date().toLocaleString());
+            const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+            const [activeSection, setActiveSection] = useState('overview');
+
+            // System Configuration Data
+            const [selectedMeter, setSelectedMeter] = useState('METER-001');
+            const [meterName, setMeterName] = useState('Industrial Plant A - Main Feed');
+            const [samplingRate, setSamplingRate] = useState(5000);
+            const [healthStatus, setHealthStatus] = useState(50);
+            const [failureRisk, setFailureRisk] = useState(15717);
+            const [operatingHours, setOperatingHours] = useState('Check Schedule');
+            const [nextService, setNextService] = useState('Check Schedule');
+
+            // Available meters data
+            const availableMeters = [
+                { id: 'METER-001', name: 'Industrial Plant A - Main Feed', location: 'Building A, Floor 1', type: 'industrial' },
+                { id: 'METER-002', name: 'Commercial Building B - HVAC', location: 'Building B, Mechanical Room', type: 'commercial' },
+                { id: 'METER-003', name: 'Residential Complex C - Main Distribution', location: 'Complex C, Electrical Room', type: 'residential' }
+            ];
+
+            // Meter-specific data
+            const meterData = {
+                'METER-001': {
+                    healthStatus: 50,
+                    failureRisk: 15717,
+                    operatingHours: 'Check Schedule',
+                    nextService: 'Check Schedule',
+                    samplingRate: 5000
+                },
+                'METER-002': {
+                    healthStatus: 75,
+                    failureRisk: 8245,
+                    operatingHours: '2,340 hours',
+                    nextService: 'March 2025',
+                    samplingRate: 3000
+                },
+                'METER-003': {
+                    healthStatus: 85,
+                    failureRisk: 4521,
+                    operatingHours: '1,890 hours',
+                    nextService: 'June 2025',
+                    samplingRate: 2000
+                }
+            };
+            
+            // Advanced AI Features States
+            const [anomalies, setAnomalies] = useState([{
+                id: Date.now(),
+                type: 'System Error',
+                severity: 'Medium',
+                prediction: 0,
+                location: 'Main System',
+                message: 'System error - manual inspection required',
+                timestamp: 'Just now',
+                priority: 'medium'
+            }]);
+            const [demandResponse, setDemandResponse] = useState({ active: false, savings: 0 });
+            const [renewableEnergy, setRenewableEnergy] = useState({ solar: 45, battery: 78, efficiency: 87 });
+            const [elderlyCare, setElderlyCare] = useState({ status: 'normal', lastActivity: '2 hours ago' });
+            const [applianceHealth, setApplianceHealth] = useState([
+                { name: 'Refrigerator', status: 'good', efficiency: 94, prediction: 'No issues detected' },
+                { name: 'Air Conditioner', status: 'warning', efficiency: 78, prediction: 'Maintenance recommended in 30 days' },
+                { name: 'Water Heater', status: 'excellent', efficiency: 96, prediction: 'Operating optimally' }
+            ]);
+            const [carbonFootprint, setCarbonFootprint] = useState({ current: 2.4, target: 2.0, reduction: 16.7 });
+            const [edgeComputing, setEdgeComputing] = useState({ localProcessing: 92, cloudProcessing: 8, latency: 2.3 });
+            const [federatedLearning, setFederatedLearning] = useState({ accuracy: 97.2, dataPrivacy: 'secure', modelSharing: true });
+            const [virtualPowerPlant, setVirtualPowerPlant] = useState({ connectedDevices: 1247, totalCapacity: 2.8, gridContribution: 15.3 });
+            
+            // Voice Generation States
+            const [voiceEnabled, setVoiceEnabled] = useState(true);
+            const [voiceVolume, setVoiceVolume] = useState(0.8);
+            const [voiceSpeed, setVoiceSpeed] = useState(1.0);
+            const [voiceActive, setVoiceActive] = useState(false);
+            const [voiceHistory, setVoiceHistory] = useState([]);
+            
+            const chartRef = useRef(null);
+            const chartInstanceRef = useRef(null);
+            
+            const [insights, setInsights] = useState([
+                "Peak usage detected during 6-8 PM hours",
+                "15% reduction potential identified in HVAC system",
+                "Optimal solar panel angle adjustment recommended",
+                "Grid stability: Excellent (99.8% uptime)",
+                "Anomaly detected: Air compressor running during off-hours",
+                "Demand response opportunity: 30% peak reduction possible",
+                "Solar energy efficiency: 75% self-consumption achieved",
+                "Edge computing processing: 92% local analysis"
+            ]);
+
+            // Initialize chart
+            useEffect(() => {
+                if (chartRef.current) {
+                    const ctx = chartRef.current.getContext('2d');
+                    
+                    chartInstanceRef.current = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+                            datasets: [{
+                                label: 'Power Consumption (kW)',
+                                data: Array.from({length: 24}, () => Math.random() * 2 + 0.5),
+                                borderColor: theme === 'dark' ? '#00d4ff' : '#667eea',
+                                backgroundColor: theme === 'dark' ? 'rgba(0, 212, 255, 0.1)' : 'rgba(102, 126, 234, 0.1)',
+                                tension: 0.4,
+                                borderWidth: 2,
+                                pointBackgroundColor: theme === 'dark' ? '#00ff88' : '#27ae60',
+                                pointBorderColor: theme === 'dark' ? '#00d4ff' : '#667eea',
+                                pointBorderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    labels: {
+                                        color: theme === 'dark' ? '#00d4ff' : '#2c3e50',
+                                        font: {
+                                            family: 'Courier New'
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    ticks: {
+                                        color: theme === 'dark' ? '#00d4ff' : '#2c3e50'
+                                    },
+                                    grid: {
+                                        color: theme === 'dark' ? 'rgba(0, 212, 255, 0.2)' : 'rgba(102, 126, 234, 0.2)'
+                                    }
+                                },
+                                y: {
+                                    ticks: {
+                                        color: theme === 'dark' ? '#00d4ff' : '#2c3e50'
+                                    },
+                                    grid: {
+                                        color: theme === 'dark' ? 'rgba(0, 212, 255, 0.2)' : 'rgba(102, 126, 234, 0.2)'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+                
+                return () => {
+                    if (chartInstanceRef.current) {
+                        chartInstanceRef.current.destroy();
+                    }
+                };
+            }, [theme]);
+
+            // Simulate real-time data updates
+            useEffect(() => {
+                const interval = setInterval(() => {
+                    setCurrentReading(prev => prev + (Math.random() - 0.5) * 0.1);
+                    setVoltage(120.5 + (Math.random() - 0.5) * 2);
+                    setCurrent(8.2 + (Math.random() - 0.5) * 1.5);
+                    setPower(987 + (Math.random() - 0.5) * 50);
+                    setFrequency(60.0 + (Math.random() - 0.5) * 0.2);
+                    setTimestamp(new Date().toLocaleString());
+                }, 1000);
+
+                return () => clearInterval(interval);
+            }, []);
+
+            // Update chart data periodically
+            useEffect(() => {
+                const chartInterval = setInterval(() => {
+                    if (chartInstanceRef.current) {
+                        const newData = Array.from({length: 24}, () => Math.random() * 2 + 0.5);
+                        chartInstanceRef.current.data.datasets[0].data = newData;
+                        chartInstanceRef.current.update();
+                    }
+                }, 5000);
+
+                return () => clearInterval(chartInterval);
+            }, []);
+
+            const handleModeChange = (newMode) => {
+                setMode(newMode);
+            };
+
+            const handleAIControl = () => {
+                setAiActive(!aiActive);
+            };
+
+            const toggleTheme = () => {
+                const newTheme = theme === 'dark' ? 'light' : 'dark';
+                setTheme(newTheme);
+                localStorage.setItem('theme', newTheme);
+                document.documentElement.setAttribute('data-theme', newTheme);
+            };
+
+            const handleMeterChange = (meterId) => {
+                const meter = availableMeters.find(m => m.id === meterId);
+                if (meter) {
+                    setSelectedMeter(meter.id);
+                    setMeterName(meter.name);
+
+                    // Update meter-specific data
+                    const data = meterData[meterId];
+                    setHealthStatus(data.healthStatus);
+                    setFailureRisk(data.failureRisk);
+                    setOperatingHours(data.operatingHours);
+                    setNextService(data.nextService);
+                    setSamplingRate(data.samplingRate);
+                }
+            };
+
+            const generateNewInsights = () => {
+                const newInsights = [
+                    "Optimal charging schedule suggested for EV",
+                    "Energy saving potential: 22% identified", 
+                    "Weather forecast integration: Clear skies for solar",
+                    "Peak demand shifting opportunity detected",
+                    "Equipment efficiency: 95.7% (excellent)",
+                    "Carbon footprint reduction: 15% this month",
+                    "Federated learning model accuracy: 97.2%",
+                    "Edge computing latency reduced to 2.3ms",
+                    "Transformer failure predicted 48hrs in advance",
+                    "Virtual power plant contributed 15.3MW to grid",
+                    "Multimodal integration with weather data active",
+                    "Carbon trading gateway ready for market entry"
+                ];
+                setInsights([...insights, ...newInsights].sort(() => Math.random() - 0.5).slice(0, 8));
+                
+                // Auto-generate voice alert for new insights
+                if (voiceEnabled) {
+                    setTimeout(() => {
+                        const randomInsight = newInsights[Math.floor(Math.random() * newInsights.length)];
+                        const message = `New AI insight available: ${randomInsight}`;
+                        generateVoiceAlert(message, 'info');
+                    }, 1500);
+                }
+            };
+
+            const detectAnomaly = () => {
+                const newAnomaly = {
+                    id: Date.now(),
+                    type: Math.random() > 0.5 ? 'Circuit Overload' : 'Energy Leakage',
+                    severity: Math.random() > 0.7 ? 'High' : 'Medium',
+                    prediction: Math.floor(Math.random() * 48) + 1,
+                    location: 'Panel A-3'
+                };
+                setAnomalies(prev => [newAnomaly, ...prev.slice(0, 4)]);
+                
+                // Auto-generate voice alert for new anomaly
+                if (voiceEnabled) {
+                    setTimeout(() => {
+                        const message = `Alert: ${newAnomaly.type} detected in ${newAnomaly.location}. Severity level ${newAnomaly.severity}. System predicts potential issue in ${newAnomaly.prediction} hours. Immediate attention recommended.`;
+                        generateVoiceAlert(message, 'warning');
+                    }, 1000);
+                }
+            };
+
+            const toggleDemandResponse = () => {
+                setDemandResponse(prev => ({
+                    ...prev,
+                    active: !prev.active,
+                    savings: !prev.active ? Math.floor(Math.random() * 30) + 10 : 0
+                }));
+            };
+
+            const updateRenewableEnergy = () => {
+                setRenewableEnergy(prev => ({
+                    solar: Math.floor(Math.random() * 30) + 60,
+                    battery: Math.floor(Math.random() * 20) + 70,
+                    efficiency: Math.floor(Math.random() * 10) + 85
+                }));
+            };
+
+            const checkElderlyCare = () => {
+                const statuses = ['normal', 'irregular', 'alert'];
+                const newStatus = statuses[Math.floor(Math.random() * statuses.length)];
+                setElderlyCare(prev => ({
+                    ...prev,
+                    status: newStatus,
+                    lastActivity: Math.floor(Math.random() * 6) + 1 + ' hours ago'
+                }));
+            };
+
+            const updateApplianceHealth = () => {
+                setApplianceHealth(prev => prev.map(appliance => ({
+                    ...appliance,
+                    efficiency: Math.max(70, Math.min(100, appliance.efficiency + (Math.random() - 0.5) * 10)),
+                    status: Math.random() > 0.8 ? 
+                        (appliance.status === 'good' ? 'warning' : appliance.status === 'warning' ? 'critical' : 'good') 
+                        : appliance.status
+                })));
+            };
+
+            const updateCarbonFootprint = () => {
+                setCarbonFootprint(prev => ({
+                    ...prev,
+                    current: Math.max(1.5, Math.min(3.0, prev.current + (Math.random() - 0.5) * 0.3)),
+                    reduction: ((3.0 - prev.current) / 3.0 * 100).toFixed(1)
+                }));
+            };
+
+            const updateEdgeComputing = () => {
+                setEdgeComputing(prev => ({
+                    ...prev,
+                    localProcessing: Math.min(95, Math.max(85, prev.localProcessing + (Math.random() - 0.5) * 5)),
+                    latency: Math.max(1.0, Math.min(5.0, prev.latency + (Math.random() - 0.5) * 1))
+                }));
+            };
+
+            const updateVirtualPowerPlant = () => {
+                setVirtualPowerPlant(prev => ({
+                    ...prev,
+                    connectedDevices: Math.floor(Math.random() * 200) + 1100,
+                    totalCapacity: (Math.random() * 0.5 + 2.5).toFixed(1),
+                    gridContribution: (Math.random() * 10 + 10).toFixed(1)
+                }));
+            };
+
+            // Voice Generation Functions
+            const generateVoiceAlert = (message, type = 'info') => {
+                if (!voiceEnabled || !('speechSynthesis' in window)) return;
+                
+                setVoiceActive(true);
+                const utterance = new SpeechSynthesisUtterance(message);
+                utterance.volume = voiceVolume;
+                utterance.rate = voiceSpeed;
+                utterance.pitch = type === 'warning' ? 0.8 : type === 'success' ? 1.2 : 1.0;
+                utterance.lang = 'en-US'; // Force English language
+                
+                // Set English voice preference
+                const voices = speechSynthesis.getVoices();
+                const englishVoices = voices.filter(voice => 
+                    voice.lang.startsWith('en') || 
+                    voice.name.includes('English') ||
+                    voice.name.includes('Google') ||
+                    voice.name.includes('Microsoft')
+                );
+                const preferredVoice = englishVoices.find(voice => 
+                    voice.name.includes('Female') || voice.name.includes('Female')
+                ) || englishVoices[0] || voices[0];
+                utterance.voice = preferredVoice;
+                
+                utterance.onend = () => setVoiceActive(false);
+                utterance.onerror = () => setVoiceActive(false);
+                
+                speechSynthesis.speak(utterance);
+                
+                // Add to voice history
+                setVoiceHistory(prev => [{
+                    id: Date.now(),
+                    message,
+                    type,
+                    timestamp: new Date().toLocaleTimeString()
+                }, ...prev.slice(0, 9)]);
+            };
+
+            const speakCurrentInsight = () => {
+                if (insights.length > 0) {
+                    const randomInsight = insights[Math.floor(Math.random() * insights.length)];
+                    generateVoiceAlert(randomInsight, 'info');
+                }
+            };
+
+            const speakAnomalyAlert = () => {
+                if (anomalies.length > 0) {
+                    const latestAnomaly = anomalies[0];
+                    const message = `${latestAnomaly.type} detected in ${latestAnomaly.location}. Severity: ${latestAnomaly.severity}. Predicted in ${latestAnomaly.prediction} hours.`;
+                    generateVoiceAlert(message, 'warning');
+                } else {
+                    generateVoiceAlert('No anomalies detected. All systems operating normally.', 'success');
+                }
+            };
+
+            const speakConsumptionUpdate = () => {
+                const message = `Current electricity consumption is ${currentReading.toFixed(2)} kilowatt hours. Daily total shows ${(currentReading - 2300).toFixed(2)} kilowatt hours used. Monthly reduction of 18 percent achieved through air compressor optimization.`;
+                generateVoiceAlert(message, 'info');
+            };
+
+            const toggleVoice = () => {
+                setVoiceEnabled(!voiceEnabled);
+                if (voiceEnabled) {
+                    speechSynthesis.cancel(); // Stop any ongoing speech
+                    setVoiceActive(false);
+                } else {
+                    generateVoiceAlert('Voice alerts activated in English. AI will now provide spoken updates on system status and insights in clear English pronunciation.', 'success');
+                }
+            };
+
+            useEffect(() => {
+                document.documentElement.setAttribute('data-theme', theme);
+                
+                // Welcome voice message after component mounts
+                setTimeout(() => {
+                    if (voiceEnabled) {
+                        generateVoiceAlert('AI-Powered Smart Meter system activated with English voice synthesis. Real-time insights and voice alerts are now available in clear English pronunciation.', 'success');
+                    }
+                }, 2000);
+            }, [theme]);
+
+            return (
+                <div className="fade-in">
+                    {/* Header Section */}
+                    <div className="header-section">
+                        <h1 className="glow-effect">
+                            AI-Powered Digital Smart Meter
+                            <span className={`ai-status ${aiActive ? 'active' : ''}`}>
+                                {aiActive ? 'AI Analysis Active' : 'AI Analysis Inactive'}
+                            </span>
+                        </h1>
+                        <div className="digital-font">
+                            Last Update: {timestamp} | Edge Computing: {edgeComputing.localProcessing}% Local | Federated Learning: {federatedLearning.accuracy}% Accuracy
+                        </div>
+                        <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <label style={{ color: 'var(--text-color)', fontSize: '0.9rem' }}>Select Smart Meter:</label>
+                                <select
+                                    value={selectedMeter}
+                                    onChange={(e) => handleMeterChange(e.target.value)}
+                                    style={{
+                                        padding: '0.5rem',
+                                        borderRadius: '5px',
+                                        border: '1px solid var(--border-color)',
+                                        background: 'var(--card-bg)',
+                                        color: 'var(--text-color)',
+                                        fontSize: '0.9rem'
+                                    }}
+                                >
+                                    {availableMeters.map(meter => (
+                                        <option key={meter.id} value={meter.id}>
+                                            {meter.id} - {meter.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <span className="ai-status active">Virtual Power Plant: {virtualPowerPlant.connectedDevices} devices</span>
+                            <span className="ai-status active">Carbon Trading Ready</span>
+                            <span className="ai-status active">Smart City Integration</span>
+                        </div>
+                    </div>
+
+                    {/* Navigation Tabs */}
+                    <div className="navigation-panel" style={{ marginBottom: '2rem' }}>
+                        <button 
+                            className={`nav-button ${activeSection === 'overview' ? 'active' : ''}`}
+                            onClick={() => setActiveSection('overview')}
+                        >
+                            📊 Overview
+                        </button>
+                        <button 
+                            className={`nav-button ${activeSection === 'realtime' ? 'active' : ''}`}
+                            onClick={() => setActiveSection('realtime')}
+                        >
+                            ⚡ Real-Time Insights
+                        </button>
+                        <button 
+                            className={`nav-button ${activeSection === 'optimization' ? 'active' : ''}`}
+                            onClick={() => setActiveSection('optimization')}
+                        >
+                            🎯 Dynamic Optimization
+                        </button>
+                        <button 
+                            className={`nav-button ${activeSection === 'applications' ? 'active' : ''}`}
+                            onClick={() => setActiveSection('applications')}
+                        >
+                            🏠 Applications
+                        </button>
+                        <button 
+                            className={`nav-button ${activeSection === 'technology' ? 'active' : ''}`}
+                            onClick={() => setActiveSection('technology')}
+                        >
+                            🔬 Technology
+                        </button>
+                        <button 
+                            className={`nav-button ${activeSection === 'future' ? 'active' : ''}`}
+                            onClick={() => setActiveSection('future')}
+                        >
+                            🚀 Future
+                        </button>
+                    </div>
+
+                    {/* Overview Section */}
+                    {activeSection === 'overview' && (
+                        <div>
+                            {/* System Configuration Display */}
+                            <div className="main-display">
+                                <div className="display-card">
+                                    <div className="display-title">System Configuration</div>
+                                    <div className="main-reading" style={{ fontSize: '1.5rem' }}>
+                                        {selectedMeter} - {meterName}
+                                    </div>
+                                    <div className="sub-reading">
+                                        Sampling Rate: {samplingRate}ms
+                                    </div>
+                                    <div className="sub-reading" style={{ color: 'var(--accent-color)' }}>
+                                        🚀 Start Monitoring ⏹ Stop Monitoring 🔄 Refresh Data
+                                    </div>
+                                </div>
+
+                                <div className="display-card">
+                                    <div className="display-title">🎯 Overall Health Status</div>
+                                    <div className="main-reading" style={{ fontSize: '3rem', color: healthStatus >= 80 ? 'var(--success-color)' : healthStatus >= 60 ? 'var(--warning-color)' : 'var(--danger-color)' }}>
+                                        {healthStatus}%
+                                    </div>
+                                    <div className="sub-reading">
+                                        Current System Health
+                                    </div>
+                                    <div className="sub-reading" style={{ color: 'var(--warning-color)' }}>
+                                        Failure Risk: {failureRisk.toLocaleString()}
+                                    </div>
+                                </div>
+
+                                <div className="display-card">
+                                    <div className="display-title">Maintenance Schedule</div>
+                                    <div className="main-reading" style={{ fontSize: '1.8rem' }}>
+                                        {operatingHours}
+                                    </div>
+                                    <div className="sub-reading">
+                                        Operating Hours
+                                    </div>
+                                    <div className="sub-reading" style={{ color: 'var(--accent-color)' }}>
+                                        Next Service: {nextService}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Main Chart */}
+                            <div className="chart-container">
+                                <h3 style={{ color: 'var(--accent-color)', marginBottom: '1rem' }}>
+                                    📈 AI-Powered Consumption Analysis & Grid Integration
+                                </h3>
+                                <canvas ref={chartRef}></canvas>
+                            </div>
+
+                            {/* Current Insights */}
+                            <div className="ai-insights">
+                                <h3>🤖 AI Intelligent Insights</h3>
+                                <div className="insight-item">
+                                    System error - manual inspection required
+                                </div>
+                                {insights.slice(0, 5).map((insight, index) => (
+                                    <div key={index} className="insight-item">
+                                        {insight}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Main Display */}
+                    <div className="main-display">
+                        <div className="display-card">
+                            <div className="display-title">Real-Time Consumption</div>
+                            <div className="main-reading">
+                                {currentReading.toFixed(2)} kWh
+                            </div>
+                            <div className="sub-reading">
+                                Current Rate: ${((currentReading % 1) * 0.12).toFixed(3)}/kWh
+                            </div>
+                            <div className="sub-reading" style={{ color: 'var(--success-color)' }}>
+                                Daily Total: {(currentReading - 2300).toFixed(2)} kWh
+                            </div>
+                        </div>
+
+                        <div className="display-card">
+                            <div className="display-title">Power Quality</div>
+                            <div className="main-reading" style={{ fontSize: '2rem' }}>
+                                {(voltage * current).toFixed(0)} W
+                            </div>
+                            <div className="status-grid">
+                                <div className="status-item">
+                                    <div className="status-label">Voltage</div>
+                                    <div className="status-value">{voltage.toFixed(1)}V</div>
+                                </div>
+                                <div className="status-item">
+                                    <div className="status-label">Current</div>
+                                    <div className="status-value">{current.toFixed(1)}A</div>
+                                </div>
+                                <div className="status-item">
+                                    <div className="status-label">Frequency</div>
+                                    <div className="status-value">{frequency.toFixed(1)}Hz</div>
+                                </div>
+                                <div className="status-item">
+                                    <div className="status-label">Power</div>
+                                    <div className="status-value">{power.toFixed(0)}W</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="display-card">
+                            <div className="display-title">AI Predictions</div>
+                            <div className="main-reading" style={{ fontSize: '2rem', color: 'var(--success-color)' }}>
+                                94.7%
+                            </div>
+                            <div className="sub-reading">
+                                Prediction Accuracy
+                            </div>
+                            <div className="sub-reading" style={{ color: 'var(--success-color)' }}>
+                                Next Peak: 7:30 PM
+                            </div>
+                            <div className="sub-reading">
+                                Estimated Bill: $89.45
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Chart Container */}
+                    <div className="chart-container">
+                        <canvas ref={chartRef}></canvas>
+                    </div>
+
+                    {/* AI Insights */}
+                    <div className="ai-insights">
+                        <h3>🤖 AI Intelligent Insights</h3>
+                        {insights.map((insight, index) => (
+                            <div key={index} className="insight-item">
+                                {insight}
+                            </div>
+                        ))}
+                        <button 
+                            className="control-button" 
+                            onClick={generateNewInsights}
+                            style={{ marginTop: '15px', width: '100%' }}
+                        >
+                            Generate New Insights
+                        </button>
+                    </div>
+
+                            {/* Real-Time Insights Section */}
+                    {activeSection === 'realtime' && (
+                        <div>
+                            <div className="main-display">
+                                <div className="display-card">
+                                    <div className="display-title">⚡ Electricity Consumption Profiling</div>
+                                    <div className="main-reading" style={{ fontSize: '2rem' }}>
+                                        18%
+                                    </div>
+                                    <div className="sub-reading">
+                                        Monthly Consumption Reduction
+                                    </div>
+                                    <div className="sub-reading">
+                                        Air compressor optimized during off-hours
+                                    </div>
+                                    <div className="sub-reading">
+                                        Pattern: 6-8 PM peak usage detected
+                                    </div>
+                                </div>
+
+                                <div className="display-card">
+                                    <div className="display-title">🚨 Anomaly Detection & Warnings</div>
+                                    <div className="main-reading" style={{ fontSize: '2rem', color: 'var(--danger-color)' }}>
+                                        48hrs
+                                    </div>
+                                    <div className="sub-reading">
+                                        Advance Warning Capability
+                                    </div>
+                                    <div className="sub-reading" style={{ color: 'var(--warning-color)' }}>
+                                        Circuit Overload Predicted in Panel A-3
+                                    </div>
+                                    <div className="sub-reading">
+                                        Transformer failure prevention active
+                                    </div>
+                                </div>
+
+                                <div className="display-card">
+                                    <div className="display-title">📱 Enhanced User Interaction</div>
+                                    <div className="main-reading" style={{ fontSize: '2rem', color: 'var(--success-color)' }}>
+                                        10kWh
+                                    </div>
+                                    <div className="sub-reading">
+                                        AC Standby Power Identified
+                                    </div>
+                                    <div className="sub-reading">
+                                        Smart plug recommendation sent
+                                    </div>
+                                    <div className="sub-reading">
+                                        Personalized energy reports active
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="display-card">
+                                <h3 style={{ color: 'var(--accent-color)', marginBottom: '1rem' }}>🚨 Active Alerts</h3>
+                                {anomalies.length === 0 ? (
+                                    <p style={{ color: 'var(--subtext-color)', textAlign: 'center' }}>
+                                        No active alerts
+                                    </p>
+                                ) : (
+                                    anomalies.map(anomaly => (
+                                        <div key={anomaly.id} style={{
+                                            background: anomaly.severity === 'High' ? 'rgba(255, 71, 87, 0.2)' :
+                                                       anomaly.severity === 'Medium' ? 'rgba(255, 170, 0, 0.2)' : 'rgba(255, 71, 87, 0.2)',
+                                            border: `1px solid ${anomaly.severity === 'High' ? 'var(--danger-color)' :
+                                                                anomaly.severity === 'Medium' ? 'var(--warning-color)' : 'var(--danger-color)'}`,
+                                            borderRadius: '15px',
+                                            padding: '1rem',
+                                            marginBottom: '1rem'
+                                        }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div>
+                                                    <strong>⚠️ {anomaly.message || anomaly.type}</strong>
+                                                </div>
+                                                <span style={{
+                                                    padding: '0.3rem 0.8rem',
+                                                    borderRadius: '15px',
+                                                    background: anomaly.severity === 'High' ? 'var(--danger-color)' :
+                                                               anomaly.severity === 'Medium' ? 'var(--warning-color)' : 'var(--danger-color)',
+                                                    color: 'white',
+                                                    fontSize: '0.8rem'
+                                                }}>
+                                                    {anomaly.severity}
+                                                </span>
+                                            </div>
+                                            <div style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
+                                                {anomaly.timestamp || 'Just now'} | Priority: {anomaly.priority || anomaly.severity.toLowerCase()}
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            {/* Voice Generation Section */}
+                            <div className="display-card">
+                                <h3 style={{ color: 'var(--success-color)', marginBottom: '1rem' }}>
+                                    🎤 Voice Generation & Audio Alerts
+                                    <span style={{ 
+                                        marginLeft: '1rem', 
+                                        fontSize: '0.8rem',
+                                        color: voiceActive ? 'var(--success-color)' : 'var(--subtext-color)'
+                                    }}>
+                                        {voiceActive ? '🔊 Speaking...' : '🔇 Ready'}
+                                    </span>
+                                </h3>
+                                
+                                {/* Voice Controls */}
+                                <div style={{ 
+                                    display: 'grid', 
+                                    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+                                    gap: '1rem',
+                                    marginBottom: '1.5rem'
+                                }}>
+                                    <div>
+                                        <h4 style={{ color: 'var(--accent-color)', marginBottom: '0.5rem' }}>Voice Settings</h4>
+                                        <div style={{ marginBottom: '1rem' }}>
+                                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                                                Volume: {Math.round(voiceVolume * 100)}%
+                                            </label>
+                                            <input 
+                                                type="range" 
+                                                min="0" 
+                                                max="1" 
+                                                step="0.1"
+                                                value={voiceVolume}
+                                                onChange={(e) => setVoiceVolume(parseFloat(e.target.value))}
+                                                style={{ width: '100%' }}
+                                            />
+                                        </div>
+                                        <div style={{ marginBottom: '1rem' }}>
+                                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                                                Speed: {voiceSpeed}x
+                                            </label>
+                                            <input 
+                                                type="range" 
+                                                min="0.5" 
+                                                max="2" 
+                                                step="0.1"
+                                                value={voiceSpeed}
+                                                onChange={(e) => setVoiceSpeed(parseFloat(e.target.value))}
+                                                style={{ width: '100%' }}
+                                            />
+                                        </div>
+                                        <div style={{ 
+                                            background: 'rgba(0, 255, 136, 0.2)', 
+                                            padding: '0.5rem', 
+                                            borderRadius: '10px', 
+                                            marginBottom: '1rem',
+                                            textAlign: 'center',
+                                            fontSize: '0.8rem',
+                                            color: 'var(--success-color)'
+                                        }}>
+                                            🌍 <strong>Language:</strong> English (US) - Voice synthesis configured for English output
+                                        </div>
+                                        <button 
+                                            className="control-button" 
+                                            onClick={toggleVoice}
+                                            style={{ width: '100%', background: voiceEnabled ? 'var(--success-color)' : 'var(--danger-color)' }}
+                                        >
+                                            {voiceEnabled ? '🔊 Voice ON' : '🔇 Voice OFF'}
+                                        </button>
+                                    </div>
+
+                                    <div>
+                                        <h4 style={{ color: 'var(--accent-color)', marginBottom: '0.5rem' }}>Quick Voice Tests</h4>
+                                        <button 
+                                            className="control-button" 
+                                            onClick={speakConsumptionUpdate}
+                                            disabled={!voiceEnabled}
+                                            style={{ width: '100%', marginBottom: '0.5rem' }}
+                                        >
+                                            📊 Speak Consumption Data
+                                        </button>
+                                        <button 
+                                            className="control-button" 
+                                            onClick={speakCurrentInsight}
+                                            disabled={!voiceEnabled}
+                                            style={{ width: '100%', marginBottom: '0.5rem' }}
+                                        >
+                                            💡 Speak AI Insight
+                                        </button>
+                                        <button 
+                                            className="control-button" 
+                                            onClick={speakAnomalyAlert}
+                                            disabled={!voiceEnabled}
+                                            style={{ width: '100%' }}
+                                        >
+                                            🚨 Speak Anomaly Alert
+                                        </button>
+                                        <button 
+                                            className="control-button" 
+                                            onClick={() => generateVoiceAlert('This is a test of English voice synthesis in the AI-powered smart meter system. All voice alerts will be delivered in clear English pronunciation.', 'info')}
+                                            disabled={!voiceEnabled}
+                                            style={{ width: '100%', marginTop: '0.5rem', background: 'var(--accent-color)' }}
+                                        >
+                                            🌍 English Voice Test
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Voice History */}
+                                <div>
+                                    <h4 style={{ color: 'var(--accent-color)', marginBottom: '0.5rem' }}>Recent Voice Alerts</h4>
+                                    <div style={{ 
+                                        maxHeight: '200px', 
+                                        overflowY: 'auto',
+                                        background: 'rgba(0, 212, 255, 0.1)',
+                                        borderRadius: '10px',
+                                        padding: '1rem'
+                                    }}>
+                                        {voiceHistory.length === 0 ? (
+                                            <p style={{ color: 'var(--subtext-color)', textAlign: 'center', fontStyle: 'italic' }}>
+                                                No voice alerts yet. Click a voice test button above.
+                                            </p>
+                                        ) : (
+                                            voiceHistory.map(voiceItem => (
+                                                <div key={voiceItem.id} style={{
+                                                    background: voiceItem.type === 'warning' ? 'rgba(255, 71, 87, 0.2)' : 
+                                                               voiceItem.type === 'success' ? 'rgba(0, 255, 136, 0.2)' : 
+                                                               'rgba(0, 212, 255, 0.2)',
+                                                    border: `1px solid ${
+                                                        voiceItem.type === 'warning' ? 'var(--danger-color)' : 
+                                                        voiceItem.type === 'success' ? 'var(--success-color)' : 
+                                                        'var(--accent-color)'
+                                                    }`,
+                                                    borderRadius: '8px',
+                                                    padding: '0.5rem',
+                                                    marginBottom: '0.5rem',
+                                                    fontSize: '0.8rem'
+                                                }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <span style={{ fontWeight: 'bold' }}>
+                                                            {voiceItem.type === 'warning' ? '⚠️' : 
+                                                             voiceItem.type === 'success' ? '✅' : '📢'} {voiceItem.timestamp}
+                                                        </span>
+                                                        <button 
+                                                            onClick={() => generateVoiceAlert(voiceItem.message, voiceItem.type)}
+                                                            style={{
+                                                                background: 'var(--accent-color)',
+                                                                color: 'white',
+                                                                border: 'none',
+                                                                borderRadius: '50%',
+                                                                width: '20px',
+                                                                height: '20px',
+                                                                cursor: 'pointer',
+                                                                fontSize: '0.7rem'
+                                                            }}
+                                                        >
+                                                            ▶️
+                                                        </button>
+                                                    </div>
+                                                    <div style={{ marginTop: '0.2rem' }}>
+                                                        {voiceItem.message}
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Dynamic Optimization Section */}
+                    {activeSection === 'optimization' && (
+                        <div>
+                            <div className="main-display">
+                                <div className="display-card">
+                                    <div className="display-title">⚡ Demand Response</div>
+                                    <div className="main-reading" style={{ fontSize: '2rem', color: 'var(--success-color)' }}>
+                                        {demandResponse.savings}%
+                                    </div>
+                                    <div className="sub-reading">
+                                        Peak Consumption Reduction
+                                    </div>
+                                    <div className="sub-reading" style={{ color: 'var(--success-color)' }}>
+                                        25% Bill Reduction Achieved
+                                    </div>
+                                    <div className="sub-reading">
+                                        EV chargers auto-scheduled off-peak
+                                    </div>
+                                </div>
+
+                                <div className="display-card">
+                                    <div className="display-title">☀️ Renewable Energy Adaptation</div>
+                                    <div className="main-reading" style={{ fontSize: '2rem', color: 'var(--success-color)' }}>
+                                        {renewableEnergy.efficiency}%
+                                    </div>
+                                    <div className="sub-reading">
+                                        Solar Self-Consumption Rate
+                                    </div>
+                                    <div className="sub-reading" style={{ color: 'var(--success-color)' }}>
+                                        Increased from 40% to 75%
+                                    </div>
+                                    <div className="sub-reading">
+                                        Battery optimization active
+                                    </div>
+                                </div>
+
+                                <div className="display-card">
+                                    <div className="display-title">🗺️ Grid Planning Assistance</div>
+                                    <div className="main-reading" style={{ fontSize: '2rem', color: 'var(--accent-color)' }}>
+                                        20%
+                                    </div>
+                                    <div className="sub-reading">
+                                        Infrastructure Investment Reduction
+                                    </div>
+                                    <div className="sub-reading">
+                                        Regional load heat map generated
+                                    </div>
+                                    <div className="sub-reading">
+                                        Substation optimization recommendations
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Applications Section */}
+                    {activeSection === 'applications' && (
+                        <div>
+                            <div className="main-display">
+                                <div className="display-card">
+                                    <div className="display-title">👴 Elderly Care Monitoring</div>
+                                    <div className="main-reading" style={{ fontSize: '2rem', color: elderlyCare.status === 'normal' ? 'var(--success-color)' : 'var(--warning-color)' }}>
+                                        {elderlyCare.status === 'normal' ? '✓' : '⚠️'}
+                                    </div>
+                                    <div className="sub-reading">
+                                        Status: {elderlyCare.status.charAt(0).toUpperCase() + elderlyCare.status.slice(1)}
+                                    </div>
+                                    <div className="sub-reading">
+                                        Last Activity: {elderlyCare.lastActivity}
+                                    </div>
+                                    <div className="sub-reading">
+                                        24hr monitoring active
+                                    </div>
+                                </div>
+
+                                <div className="display-card">
+                                    <div className="display-title">🔧 Appliance Health Monitoring</div>
+                                    {applianceHealth.map((appliance, index) => (
+                                        <div key={index} style={{ marginBottom: '1rem', padding: '0.5rem', background: 'rgba(0, 212, 255, 0.1)', borderRadius: '10px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <strong>{appliance.name}</strong>
+                                                <span style={{ 
+                                                    color: appliance.status === 'excellent' ? 'var(--success-color)' : 
+                                                           appliance.status === 'warning' ? 'var(--warning-color)' : 'var(--danger-color)' 
+                                                }}>
+                                                    {appliance.status}
+                                                </span>
+                                            </div>
+                                            <div style={{ fontSize: '0.8rem', marginTop: '0.2rem' }}>
+                                                Efficiency: {appliance.efficiency.toFixed(0)}% | {appliance.prediction}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="display-card">
+                                    <div className="display-title">🏭 Industrial Optimization</div>
+                                    <div className="main-reading" style={{ fontSize: '2rem', color: 'var(--success-color)' }}>
+                                        ¥1M+
+                                    </div>
+                                    <div className="sub-reading">
+                                        Annual Savings Achieved
+                                    </div>
+                                    <div className="sub-reading">
+                                        Electric furnace optimization
+                                    </div>
+                                    <div className="sub-reading">
+                                        Carbon footprint: {carbonFootprint.current}t CO₂
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Technology Section */}
+                    {activeSection === 'technology' && (
+                        <div>
+                            <div className="main-display">
+                                <div className="display-card">
+                                    <div className="display-title">⚡ Edge Computing</div>
+                                    <div className="main-reading" style={{ fontSize: '2rem', color: 'var(--success-color)' }}>
+                                        {edgeComputing.localProcessing}%
+                                    </div>
+                                    <div className="sub-reading">
+                                        Local Processing Rate
+                                    </div>
+                                    <div className="sub-reading">
+                                        Millisecond Response Time
+                                    </div>
+                                    <div className="sub-reading">
+                                        Latency: {edgeComputing.latency}ms
+                                    </div>
+                                </div>
+
+                                <div className="display-card">
+                                    <div className="display-title">🔒 Federated Learning</div>
+                                    <div className="main-reading" style={{ fontSize: '2rem', color: 'var(--success-color)' }}>
+                                        {federatedLearning.accuracy}%
+                                    </div>
+                                    <div className="sub-reading">
+                                        Model Accuracy
+                                    </div>
+                                    <div className="sub-reading">
+                                        Data Privacy: {federatedLearning.dataPrivacy}
+                                    </div>
+                                    <div className="sub-reading">
+                                        Cross-industrial collaboration active
+                                    </div>
+                                </div>
+
+                                <div className="display-card">
+                                    <div className="display-title">🌐 Multimodal Integration</div>
+                                    <div className="main-reading" style={{ fontSize: '2rem', color: 'var(--accent-color)' }}>
+                                        Active
+                                    </div>
+                                    <div className="sub-reading">
+                                        Weather + Geographic + Economic Data
+                                    </div>
+                                    <div className="sub-reading">
+                                        "Electricity Price Storm" warnings
+                                    </div>
+                                    <div className="sub-reading">
+                                        Predictive accuracy enhanced
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Future Prospects Section */}
+                    {activeSection === 'future' && (
+                        <div>
+                            <div className="main-display">
+                                <div className="display-card">
+                                    <div className="display-title">🏭 Virtual Power Plant</div>
+                                    <div className="main-reading" style={{ fontSize: '2rem', color: 'var(--success-color)' }}>
+                                        {virtualPowerPlant.connectedDevices}
+                                    </div>
+                                    <div className="sub-reading">
+                                        Connected Devices
+                                    </div>
+                                    <div className="sub-reading">
+                                        Total Capacity: {virtualPowerPlant.totalCapacity}MW
+                                    </div>
+                                    <div className="sub-reading">
+                                        Grid Contribution: {virtualPowerPlant.gridContribution}MW
+                                    </div>
+                                </div>
+
+                                <div className="display-card">
+                                    <div className="display-title">🌱 Carbon Trading Gateway</div>
+                                    <div className="main-reading" style={{ fontSize: '2rem', color: 'var(--success-color)' }}>
+                                        Ready
+                                    </div>
+                                    <div className="sub-reading">
+                                        Carbon Credits Generation
+                                    </div>
+                                    <div className="sub-reading">
+                                        Market participation enabled
+                                    </div>
+                                    <div className="sub-reading">
+                                        Reduction: {carbonFootprint.reduction}% achieved
+                                    </div>
+                                </div>
+
+                                <div className="display-card">
+                                    <div className="display-title">🏙️ Smart City Foundation</div>
+                                    <div className="main-reading" style={{ fontSize: '2rem', color: 'var(--accent-color)' }}>
+                                        Active
+                                    </div>
+                                    <div className="sub-reading">
+                                        Transportation + Security Integration
+                                    </div>
+                                    <div className="sub-reading">
+                                        1.2M kWh annual savings (Hangzhou)
+                                    </div>
+                                    <div className="sub-reading">
+                                        "Electricity-Vehicle-Road-Building" network
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Enhanced Control Panel */}
+                    <div className="control-panel">
+                        <h3 style={{ color: 'var(--accent-color)', marginBottom: '1rem' }}>🎛️ AI Control Center</h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                            <button className="control-button" onClick={detectAnomaly}>
+                                🔍 Detect Anomaly
+                            </button>
+                            <button 
+                                className={`control-button ${demandResponse.active ? 'active' : ''}`}
+                                onClick={toggleDemandResponse}
+                            >
+                                ⚡ Demand Response {demandResponse.active ? '(Active)' : ''}
+                            </button>
+                            <button className="control-button" onClick={updateRenewableEnergy}>
+                                ☀️ Optimize Solar
+                            </button>
+                            <button className="control-button" onClick={checkElderlyCare}>
+                                👴 Check Elderly Care
+                            </button>
+                            <button className="control-button" onClick={updateApplianceHealth}>
+                                🔧 Appliance Health
+                            </button>
+                            <button className="control-button" onClick={updateCarbonFootprint}>
+                                🌱 Carbon Tracking
+                            </button>
+                            <button className="control-button" onClick={updateEdgeComputing}>
+                                ⚡ Edge Computing
+                            </button>
+                            <button className="control-button" onClick={updateVirtualPowerPlant}>
+                                🏭 Virtual Power Plant
+                            </button>
+                            <button 
+                                className="control-button"
+                                onClick={handleAIControl}
+                            >
+                                🤖 {aiActive ? 'Disable AI' : 'Enable AI'}
+                            </button>
+                            <button className="control-button" onClick={generateNewInsights}>
+                                💡 Generate Insights
+                            </button>
+                            <button className="control-button" onClick={speakConsumptionUpdate}>
+                                🎤 Voice Data Report
+                            </button>
+                            <button className="control-button" onClick={() => setCurrentReading(2300)}>
+                                🔄 Reset Reading
+                            </button>
+                            <button className="control-button" onClick={toggleTheme}>
+                                🌓 Toggle Theme
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Footer Navigation */}
+                    <div className="navigation-panel">
+                        <span style={{ color: 'var(--subtext-color)', marginRight: '2rem' }}>
+                            🌐 Energy Internet Foundation | 🔗 Smart City Integration | 🌱 Carbon Neutral Goal 2050
+                        </span>
+                        <button
+                            className="nav-button"
+                            onClick={() => window.location.href = 'index.html'}
+                            style={{ background: 'var(--success-color)', color: 'white' }}
+                        >
+                            📊 Go to Main Dashboard
+                        </button>
+                        <button className="nav-button">Settings</button>
+                        <button className="nav-button">Reports</button>
+                        <button className="nav-button">Network</button>
+                        <button className="nav-button">Help</button>
+                        <button
+                            className="nav-button"
+                            onClick={() => window.location.reload()}
+                            style={{ background: 'var(--accent-color)', color: 'white' }}
+                        >
+                            🔄 System Refresh
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        // Theme toggle functionality
+        document.getElementById('themeToggle').addEventListener('click', function() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        });
+
+        // Initialize the app
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<DigitalSmartMeter />);
+        {% endraw %}
+    </script>
+</body>
+</html>

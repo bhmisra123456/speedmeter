@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="description" content="Learn how to integrate the Digital Meter module into your applications with practical examples and code snippets.">
+    <meta name="keywords" content="digital meter, integration, module, API, WebSocket, smart meter">
+    <meta name="author" content="Smart Meter Revolution">
+    <title>Digital Meter Integration Example</title>
+    
+    <!-- Performance optimizations -->
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.0/axios.min.js" as="script">
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js" as="script">
+    
+    <!-- Load dependencies with defer for better performance -->
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.0/axios.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            color: #e0e0e0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: rgba(20, 25, 45, 0.95);
+            padding: 2rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        .header h1 {
+            margin: 0 0 0.5rem 0;
+            background: linear-gradient(45deg, #00aaff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .controls {
+            background: rgba(20, 25, 45, 0.95);
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        .control-group {
+            margin-bottom: 1rem;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .control-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #2c3e50;
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #e0e0e0;
+            font-size: 1rem;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            margin-right: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+        
+        .code-example {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            overflow-x: auto;
+        }
+        
+        .code-example h3 {
+            margin-top: 0;
+            color: #00aaff;
+        }
+        
+        .code-example pre {
+            margin: 0;
+            color: #00ff88;
+            font-family: 'Courier New', monospace;
+        }
+        
+        /* Accessibility improvements */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+        
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 6px;
+            background: #000;
+            color: #fff;
+            padding: 8px;
+            text-decoration: none;
+            border-radius: 4px;
+            z-index: 1000;
+        }
+        
+        .skip-link:focus {
+            top: 6px;
+        }
+        
+        .btn:focus,
+        .control-group select:focus {
+            outline: 2px solid #00aaff;
+            outline-offset: 2px;
+        }
+        
+        /* High contrast support */
+        @media (prefers-contrast: high) {
+            .header,
+            .controls {
+                border: 2px solid #00aaff;
+            }
+            
+            .btn {
+                border: 2px solid transparent;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>⚡ Digital Meter Integration Example</h1>
+            <p>Demonstrates how to integrate the Digital Meter module into your application</p>
+        </div>
+        
+        <!-- Controls -->
+        <div class="controls">
+            <h3>📊 Meter Selection</h3>
+            <div class="control-group">
+                <label for="meterSelect">Select Smart Meter:</label>
+                <select id="meterSelect">
+                    <option value="">Loading meters...</option>
+                </select>
+            </div>
+            <button class="btn" id="connectBtn">Connect to Meter</button>
+            <button class="btn" id="refreshBtn">🔄 Refresh Data</button>
+            <button class="btn" id="disconnectBtn">Disconnect</button>
+        </div>
+        
+        <!-- Digital Meter Container -->
+        <div id="digitalMeterContainer"></div>
+        
+        <!-- Code Examples -->
+        <div class="code-example">
+            <h3>📝 Basic Integration</h3>
+            <pre>
+// 1. Include the module
+<script src="/static/js/digital-meter-module.js"></script>
+
+// 2. Create a container
+<div id="digitalMeterContainer"></div>
+
+// 3. Initialize the module
+DigitalMeterModule.init('digitalMeterContainer', {
+    apiBaseUrl: '/api',
+    wsUrl: 'http://localhost:5000'
+});
+
+// 4. Set a meter
+DigitalMeterModule.setMeter({
+    id: 'METER001',
+    name: 'Main Building Meter',
+    meter_type: 'smart',
+    location: 'Building A',
+    status: 'active'
+});
+            </pre>
+        </div>
+        
+        <div class="code-example">
+            <h3>🔌 WebSocket Integration</h3>
+            <pre>
+// The module automatically handles WebSocket connections
+// You can check the connection status:
+console.log(DigitalMeterModule.state.isConnected);
+
+// Access current reading:
+console.log(DigitalMeterModule.state.currentReading);
+
+// Get selected meter:
+console.log(DigitalMeterModule.state.selectedMeter);
+            </pre>
+        </div>
+        
+        <div class="code-example">
+            <h3>🎨 Custom Colors</h3>
+            <pre>
+DigitalMeterModule.init('container', {
+    colors: {
+        voltage: '#00aaff',      // Voltage display color
+        current: '#ff6600',      // Current display color
+        power: '#00ff00',        // Power display color
+        frequency: '#ff00ff',    // Frequency display color
+        powerFactor: '#ffff00',  // Power factor color
+        reactive: '#ffaa00',     // Reactive power color
+        temperature: '#ff4444',  // Temperature color
+        thd: '#44aaff'          // THD color
+    }
+});
+            </pre>
+        </div>
+        
+        <div class="code-example">
+            <h3>🧹 Cleanup</h3>
+            <pre>
+// When you're done, clean up the module
+DigitalMeterModule.destroy();
+            </pre>
+        </div>
+    </div>
+    
+    <!-- Load Digital Meter Module -->
+    <script src="/static/js/digital-meter-module.js"></script>
+    
+    <script>
+        // Sample meters data (in production, this would come from API)
+        let meters = [];
+        let selectedMeter = null;
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Initialize Digital Meter Module
+            DigitalMeterModule.init('digitalMeterContainer', {
+                apiBaseUrl: '/api',
+                wsUrl: window.location.origin
+            });
+            
+            // Load meters
+            await loadMeters();
+            
+            // Setup event listeners
+            setupEventListeners();
+        });
+        
+        // Load meters from API
+        async function loadMeters() {
+            try {
+                const response = await axios.get('/api/meters');
+                meters = response.data;
+                
+                const select = document.getElementById('meterSelect');
+                select.innerHTML = '<option value="">Select a meter...</option>';
+                
+                meters.forEach(meter => {
+                    const option = document.createElement('option');
+                    option.value = meter.id;
+                    option.textContent = `${meter.name} (${meter.id}) - ${meter.location}`;
+                    select.appendChild(option);
+                });
+                
+                console.log('Loaded', meters.length, 'meters');
+            } catch (error) {
+                console.error('Failed to load meters:', error);
+                document.getElementById('meterSelect').innerHTML = 
+                    '<option value="">Error loading meters</option>';
+            }
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // Meter selection change
+            document.getElementById('meterSelect').addEventListener('change', function() {
+                const meterId = this.value;
+                if (meterId) {
+                    connectToMeter(meterId);
+                }
+            });
+            
+            // Connect button
+            document.getElementById('connectBtn').addEventListener('click', function() {
+                const meterId = document.getElementById('meterSelect').value;
+                if (meterId) {
+                    connectToMeter(meterId);
+                } else {
+                    alert('Please select a meter first');
+                }
+            });
+            
+            // Refresh button
+            document.getElementById('refreshBtn').addEventListener('click', function() {
+                if (selectedMeter) {
+                    DigitalMeterModule.setMeter(selectedMeter);
+                    console.log('Refreshed meter data');
+                } else {
+                    alert('No meter connected');
+                }
+            });
+            
+            // Disconnect button
+            document.getElementById('disconnectBtn').addEventListener('click', function() {
+                selectedMeter = null;
+                document.getElementById('meterSelect').value = '';
+                console.log('Disconnected from meter');
+            });
+        }
+        
+        // Connect to a meter
+        function connectToMeter(meterId) {
+            selectedMeter = meters.find(m => m.id === meterId);
+            
+            if (selectedMeter) {
+                DigitalMeterModule.setMeter(selectedMeter);
+                console.log('Connected to meter:', selectedMeter.name);
+            } else {
+                console.error('Meter not found:', meterId);
+            }
+        }
+        
+        // Log module state for debugging
+        setInterval(() => {
+            if (DigitalMeterModule.state.selectedMeter) {
+                console.log('Module State:', {
+                    connected: DigitalMeterModule.state.isConnected,
+                    meter: DigitalMeterModule.state.selectedMeter.id,
+                    hasReading: !!DigitalMeterModule.state.currentReading
+                });
+            }
+        }, 10000); // Log every 10 seconds
+    </script>
+</body>
+</html>
